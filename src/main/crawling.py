@@ -35,8 +35,13 @@ class WebCrawler:
         """
 
         """
-        port = r.get("http://{host}:{port}/{api_prefix}/getMainContainer/{submission_port}".format(**nanny_params,
-                                                                                                   submission_port=port)).text
+        portRequest = r.get("http://{host}:{port}/{api_prefix}/getMainContainer/{submission_port}".format(**nanny_params,
+                                                                                                   submission_port=port))
+        if portRequest.status_code is not 200:
+            logging.warning(f'request for port returned {portRequest.status_code}')
+            port = browser_params['port']
+        else:
+            port = portRequest.text
         self.number_of_pages = None
         self.last_result = None
         if browser_params.get("host") is None:

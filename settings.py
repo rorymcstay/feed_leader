@@ -6,10 +6,6 @@ kafka_params = {
     "bootstrap_servers": [os.getenv("KAFKA_ADDRESS", "localhost:29092")],
 }
 
-hazelcast_params = {
-    "host": "127.0.0.1", "port": 5701
-}
-
 browser_params = {
     "port": os.getenv("BROWSER_PORT", 4444),
     "host": os.getenv("BROWSER_CONTAINER_HOST", None),
