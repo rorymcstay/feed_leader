@@ -15,7 +15,7 @@ from settings import nanny_params, feed_params, routing_params
 from src.main.exceptions import NextPageException
 from src.main.manager import FeedManager
 from src.main.market.utils.WebCrawlerConstants import WebCrawlerConstants
-
+from feed.service import Client
 start = logging.getLogger("startup")
 
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
@@ -39,6 +39,11 @@ class GracefulKiller:
 
 market: FeedManager = FeedManager()
 market.setHome()
+
+nanny = Client("nanny", **nanny_params)
+router = Client("routing", **routing_params)
+
+
 if __name__ == '__main__':
     killer = GracefulKiller()
     start.warning("leader has started")
