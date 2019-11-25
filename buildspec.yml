@@ -6,7 +6,7 @@ phases:
       docker: 18
   pre_build:
     commands:
-      - IMAGE_TAG=$PROJECT_NAME/$COMPONENT:0.0.0
+      - IMAGE_TAG=$PROJECT_NAME/$COMPONENT:0.0.1
       - echo Logging in to Amazon ECR...
 
   build:

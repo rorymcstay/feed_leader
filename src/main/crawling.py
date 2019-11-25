@@ -21,80 +21,29 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from urllib3.exceptions import MaxRetryError, ProtocolError
 
-from settings import feed_params, browser_params, nanny_params
+from feed.settings import browser_params, nanny_params
+from feed.crawling import BrowserService
+from settings import feed_params
 from src.main.exceptions import NextPageException
 from src.main.market.utils.WebCrawlerConstants import WebCrawlerConstants
 
 logging = log.getLogger(__name__)
 
 
-class WebCrawler:
+class WebCrawler(BrowserService):
     driver: WebDriver
 
     def __init__(self, port=browser_params["port"]):
         """
 
         """
-        portRequest = r.get("http://{host}:{port}/{api_prefix}/getMainContainer/{submission_port}".format(**nanny_params,
-                                                                                                   submission_port=port))
-        if portRequest.status_code is not 200:
-            logging.warning(f'request for port returned {portRequest.status_code}')
-            port = browser_params['port']
-        else:
-            port = portRequest.text
-        self.number_of_pages = None
-        self.last_result = None
-        if browser_params.get("host") is None:
-            host = "worker-{port}:4444".format(port=port)
-        else:
-            host = browser_params.get("host") + ":" + port
-        url = "http://{host}/wd/hub".format(host=host)
-        logging.debug("Starting remote webdriver")
-        options = Options()
-        options.add_argument("--headless")
-        self.startWebdriverSession(url, options, port)
-        self.port = port
-        logging.info('remote driver initiated'.format(url))
+        getContainerUrl="http://{host}:{port}/{api_prefix}/getMainContainer/{submission_port}".format(**nanny_params,
+                                                                                                      submission_port=port)
+        super().__init__(getContainerUrl=getContainerUrl)
+
         self.driver.set_window_size(1020, 900)
         self.history = []
         self.page = 1
-
-    def startWebdriverSession(self, url, options, port, attempts=0):
-
-        max_attempts = 10
-        attempts += 1
-        try:
-            self.driver = webdriver.Remote(command_executor=url,
-                                           desired_capabilities=DesiredCapabilities.CHROME,
-                                           options=options)
-
-        except (RemoteDisconnected, ProtocolError, MaxRetryError) as e:
-            logging.warning(
-                "failed to communicate with selenium at {}, trying again for {} more times".format(url, max_attempts - attempts))
-            if attempts < max_attempts:
-                self.startWebdriverSession(url, options, port, attempts)
-                sleep(3)
-            else:
-                r.get("http://{host}:{port}/{api_prefix}/freeContainer/{}".format(port, **nanny_params))
-                sleep(3)
-                port = r.get(
-                    "http://{host}:{port}/{api_prefix}/getMainContainer/{submission_port}".format(**nanny_params,
-                                                                                                  submission_port=port)).text
-                self.startWebdriverSession(url, options, port)
-        except MaxRetryError as e:
-            logging.warning(
-                "failed to communicate with selenium at {}, trying again for {} more times".format(url, max_attempts - attempts))
-            if attempts < max_attempts:
-                self.startWebdriverSession(url, options, port,attempts)
-                sleep(3)
-            else:
-                r.get("http://{host}:{port}/{api_prefix}/freeContainer/{}".format(port, **nanny_params))
-                sleep(3)
-                port = r.get(
-                    "http://{host}:{port}/{api_prefix}/getMainContainer/{submission_port}".format(**nanny_params,
-                                                                                                  submission_port=port)).text
-                self.startWebdriverSession(url, options, port)
-        logging.info("started webdriver session")
 
     def safelyClick(self, item, wait_for, selector, timeout=3):
         """

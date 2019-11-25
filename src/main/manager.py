@@ -5,8 +5,9 @@ import logging as log
 import bs4
 import requests as r
 from kafka import KafkaProducer
-
-from settings import kafka_params, routing_params, feed_params
+from kafka.errors import NoBrokersAvailable
+import time
+from feed.settings import kafka_params, routing_params, feed_params
 from src.main.crawling import WebCrawler
 
 logging = log.getLogger(__name__)
@@ -30,10 +31,22 @@ class FeedManager:
     busy = False
     browsers = []
 
-    kafkaProducer = KafkaProducer(**kafka_params)
 
-    def __init__(self):
+    def __init__(self, attempts=0):
         self.webCrawler = WebCrawler()
+
+        try:
+            self.kafkaProducer = KafkaProducer(**kafka_params)
+        except NoBrokersAvailable as e:
+            if attempts < retry_params.get("retry_params"):
+                time.sleep(retry_params.get("times"))
+                attempts += 1
+                logging.info(f'feed leader is retyring to connect to kafka for the {attempts} time ')
+                self.__init__(self, attempts=attempts)
+            else
+                raise e
+
+
 
     def renewWebCrawler(self):
         logging.info("renewing webcrawler")

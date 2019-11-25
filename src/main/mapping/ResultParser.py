@@ -2,7 +2,7 @@ import bs4
 from bs4 import Tag, NavigableString
 from typing import List, Dict, Any, Union
 
-from settings import markets, results
+from feed.settings import markets, results
 from src.main.car.Domain import Result
 
 

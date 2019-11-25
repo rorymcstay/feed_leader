@@ -1,30 +1,7 @@
 import os
 
 import requests
-
-kafka_params = {
-    "bootstrap_servers": [os.getenv("KAFKA_ADDRESS", "localhost:29092")],
-}
-
-browser_params = {
-    "port": os.getenv("BROWSER_PORT", 4444),
-    "host": os.getenv("BROWSER_CONTAINER_HOST", None),
-    "image": os.getenv('BROWSER_IMAGE', 'selenium/standalone-chrome:3.141.59')
-}
-
-routing_params = {
-    "host": os.getenv("ROUTER_HOST", "localhost"),
-    "port": os.getenv("FLASK_PORT", 5002),
-    "api_prefix": "routingcontroller"
-}
-
-nanny_params = {
-    "host": os.getenv("NANNY_HOST", "localhost"),
-    "port": os.getenv("FLASK_PORT", 5003),
-    "api_prefix": "containercontroller",
-    "params_manager": "parametercontroller"
-}
-
+from feed.settings import nanny_params
 
 params = requests.get("http://{host}:{port}/{params_manager}/getParameter/leader/{name}".format(**nanny_params, name=os.getenv("NAME")))
 

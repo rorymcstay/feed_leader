@@ -11,7 +11,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
-from settings import nanny_params, feed_params, routing_params
+from feed.settings import nanny_params, routing_params
+from settings import feed_params
 from src.main.exceptions import NextPageException
 from src.main.manager import FeedManager
 from src.main.market.utils.WebCrawlerConstants import WebCrawlerConstants
@@ -24,6 +25,7 @@ logging.getLogger("requests").setLevel(logging.WARNING)
 logging.getLogger("kafka").setLevel(logging.WARNING)
 logging.getLogger("urllib3").setLevel(logging.ERROR)
 logging.getLogger("selenium").setLevel(logging.WARNING)
+
 
 
 class GracefulKiller:
