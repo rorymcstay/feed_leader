@@ -4,3 +4,5 @@ beautifulsoup4
 hazelcast-python-client
 kafka-python
 feed-utils
+flask-classy
+flask
