@@ -43,7 +43,7 @@ class FeedManager:
                 attempts += 1
                 logging.info(f'feed leader is retyring to connect to kafka for the {attempts} time ')
                 self.__init__(self, attempts=attempts)
-            else
+            else:
                 raise e
 
 
