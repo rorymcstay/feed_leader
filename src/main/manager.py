@@ -7,7 +7,8 @@ import requests as r
 from kafka import KafkaProducer
 from kafka.errors import NoBrokersAvailable
 import time
-from feed.settings import kafka_params, routing_params, feed_params
+from feed.settings import kafka_params, routing_params, retry_params
+from settings import feed_params
 from src.main.crawling import WebCrawler
 
 logging = log.getLogger(__name__)
@@ -38,13 +39,8 @@ class FeedManager:
         try:
             self.kafkaProducer = KafkaProducer(**kafka_params)
         except NoBrokersAvailable as e:
-            if attempts < retry_params.get("retry_params"):
-                time.sleep(retry_params.get("times"))
-                attempts += 1
-                logging.info(f'feed leader is retyring to connect to kafka for the {attempts} time ')
-                self.__init__(self, attempts=attempts)
-            else:
-                raise e
+            logging.info("Kafka is not available")
+            logging.info(json.dumps(kafka_params, indent=4))
 
 
 

@@ -33,7 +33,7 @@ logging = log.getLogger(__name__)
 class WebCrawler(BrowserService):
     driver: WebDriver
 
-    def __init__(self, port=browser_params["port"]):
+    def __init__(self, port=os.getenv("BROWSER_PORT")):
         """
 
         """
