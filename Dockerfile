@@ -7,6 +7,7 @@ WORKDIR /home
 ADD requirements.txt ./requirements.txt
 
 RUN python -m pip install pip
+RUN pip install --upgrade pip
 RUN pip install -r ./requirements.txt
 
 
@@ -17,4 +18,5 @@ COPY settings.py ./settings.py
 COPY leader.py ./app.py
 
 # Entrypoint
-CMD ["python", "./app.py" ]
+ENTRYPOINT ["python", "./app.py" ]
+CMD ["--run"]

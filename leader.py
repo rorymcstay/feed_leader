@@ -2,7 +2,7 @@ import logging
 import os
 import signal
 import sys
-
+import argparse
 from time import time, sleep
 
 import requests
@@ -27,68 +27,27 @@ logging.getLogger("urllib3").setLevel(logging.ERROR)
 logging.getLogger("selenium").setLevel(logging.WARNING)
 
 
-
-class GracefulKiller:
-    kill_now = False
-
-    def __init__(self):
-        signal.signal(signal.SIGINT, self.exit_gracefully)
-        signal.signal(signal.SIGTERM, self.exit_gracefully)
-
-    def exit_gracefully(self, signum, frame):
-        self.kill_now = True
+parser = argparse.ArgumentParser(description='feed leader')
+parser.add_argument('--run',action='store_true', default=False)
+parser.add_argument('--test',action='store_true', default=False)
+parser.add_argument('--single',action='store_true', default=False)
 
 
-market: FeedManager = FeedManager()
-market.setHome()
 
+feed: FeedManager = FeedManager()
+
+# check depepndent containers
 nanny = Client("nanny", **nanny_params)
 router = Client("routing", **routing_params)
 
+# parse args
+args = parser.parse_args()
 
-if __name__ == '__main__':
-    killer = GracefulKiller()
-    start.warning("leader has started")
-    while True:
-        timeStart = time()
-        try:
-            market.publishListOfResults()
-            try:
-                market.webCrawler.nextPage()
-            except (NextPageException, WebDriverException) as e:
-                logging.warning("{} raised whilst going to next page - using router".format(e))
-                nextPage = "http://{host}:{port}/{api_prefix}/getResultPageUrl/{name}".format(**routing_params,
-                                                                                              **feed_params)
-                nextPage = requests.get(nextPage, json=dict(make=market.make,
-                                                            model=market.model,
-                                                            sort=market.sort,
-                                                            page=market.webCrawler.page))
+if args.single:
+    feed.singleMode()
+elif args.test:
+    feed.runMode(test=True)
+else:
+    feed.runMode()
 
-                try:
-                    market.webCrawler.driver.get(nextPage.text)
-                except TimeoutException:
-                    market.webCrawler.driver.get(nextPage.text)
-                try:
-                    element_present = EC.presence_of_element_located((By.CSS_SELECTOR, feed_params['wait_for']))
-                    WebDriverWait(market.webCrawler.driver, WebCrawlerConstants().click_timeout).until(element_present)
-                except TimeoutException:
-                    logging.info("page did not load as expected - timeout exception")
-        except TypeError as e:
-            logging.warning("type error - {}".format(e.args[0]))
-            market.webCrawler.driver.refresh()
-        except TimeoutException as e:
-            logging.info("Webdriver timed out")
 
-        logging.info(msg="published page to kafka results in {}".format(time() - timeStart))
-        requests.put("http://{host}:{port}/{api_prefix}/updateHistory/{name}".format(name=feed_params["name"],
-                                                                                     **routing_params),
-                     data=market.webCrawler.driver.current_url)
-
-        sleep(5)
-        # verify then wait until page ready
-        if killer.kill_now:
-            market.webCrawler.driver.close()
-            requests.get(
-                "http://{host}:{port}/{api_prefix}/freeContainer/{free_port}".format(free_port=market.webCrawler.port,
-                                                                                      **nanny_params))
-            sys.exit()

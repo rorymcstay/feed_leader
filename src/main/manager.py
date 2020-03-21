@@ -1,18 +1,44 @@
+import sys
 import itertools
 import json
-import logging as log
-
+import logging
+from time import time
 import bs4
 import requests as r
 from kafka import KafkaProducer
 from kafka.errors import NoBrokersAvailable
 import time
+from time import sleep
 from feed.settings import kafka_params, routing_params, retry_params
 from settings import feed_params
 from src.main.crawling import WebCrawler
+from selenium.common.exceptions import WebDriverException, TimeoutException
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.wait import WebDriverWait
 
-logging = log.getLogger(__name__)
+from feed.settings import nanny_params, routing_params
+from settings import feed_params
+from src.main.exceptions import NextPageException
+from src.main.market.utils.WebCrawlerConstants import WebCrawlerConstants
+from feed.service import Client
 
+import signal
+start = logging.getLogger("startup")
+
+log = logging.getLogger(__name__)
+
+start = logging.getLogger("startup")
+
+class GracefulKiller:
+    kill_now = False
+
+    def __init__(self):
+        signal.signal(signal.SIGINT, self.exit_gracefully)
+        signal.signal(signal.SIGTERM, self.exit_gracefully)
+
+    def exit_gracefully(self, signum, frame):
+        self.kill_now = True
 
 class FeedManager:
     _instance = None
@@ -90,8 +116,9 @@ class FeedManager:
         return self.goHome()
 
     def publishListOfResults(self):
+        stream = feed_params['result_stream'].get("class")
         parser = bs4.BeautifulSoup(self.webCrawler.driver.page_source, features="html.parser")
-        results = parser.findAll(attrs={"class": feed_params['result_stream'].get("class")})
+        results = parser.findAll(attrs={"class": stream})
         logging.debug("parsed {} results from {}".format(len(results), self.webCrawler.driver.current_url))
         i = 0
         for result in results:
@@ -101,3 +128,62 @@ class FeedManager:
             i += 1
             logging.debug("published {} results".format(i))
         logging.info("parsed {} results from {}".format(len(results), self.webCrawler.driver.current_url))
+
+    def runMode(self, test=False):
+        self.setHome()
+        killer = GracefulKiller()
+        start.info("leader has started")
+        it = 0
+        while (not test and True) or (it < 2 and test):
+            timeStart = time.time()
+            it +=1
+            try:
+                self.publishListOfResults()
+                try:
+                    self.webCrawler.nextPage()
+                except (NextPageException, WebDriverException) as e:
+                    logging.warning("{} raised whilst going to next page - using router".format(e))
+                    nextPage = "http://{host}:{port}/{api_prefix}/getResultPageUrl/{name}".format(**routing_params,
+                                                                                                  **feed_params)
+                    nextPage = r.get(nextPage, json=dict(make=self.make,
+                                                                model=self.model,
+                                                                sort=self.sort,
+                                                                page=self.webCrawler.page))
+
+                    try:
+                        self.webCrawler.driver.get(nextPage.text)
+                    except TimeoutException:
+                        self.webCrawler.driver.get(nextPage.text)
+                    try:
+                        element_present = EC.presence_of_element_located((By.CSS_SELECTOR, feed_params['wait_for']))
+                        WebDriverWait(self.webCrawler.driver, WebCrawlerConstants().click_timeout).until(element_present)
+                    except TimeoutException:
+                        logging.info("page did not load as expected - timeout exception")
+            except TypeError as e:
+                logging.warning("type error - {}".format(e.args[0]))
+                self.webCrawler.driver.refresh()
+            except TimeoutException as e:
+                logging.info("Webdriver timed out")
+
+            logging.info(msg="published page to kafka results in {}".format(time.time() - timeStart))
+            r.put("http://{host}:{port}/{api_prefix}/updateHistory/{name}".format(name=feed_params["name"],
+                                                                                         **routing_params),
+                         data=self.webCrawler.driver.current_url)
+
+            sleep(5)
+            # verify then wait until page ready
+
+            if killer.kill_now:
+                self.webCrawler.driver.close()
+                r.get(
+                    "http://{host}:{port}/{api_prefix}/freeContainer/{free_port}".format(free_port=self.webCrawler.port,
+                                                                                          **nanny_params))
+                sys.exit()
+        self.webCrawler.driver.close()
+        sys.exit()
+
+    def singleMode(self):
+        self.setHome()
+        self.publishListOfResults()
+        sys.exit()
+
