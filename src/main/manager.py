@@ -134,7 +134,7 @@ class FeedManager:
         killer = GracefulKiller()
         start.info("leader has started")
         it = 0
-        while (not test and True) or (it < 2 and test):
+        while (not test) or (it < 2):
             timeStart = time.time()
             it +=1
             try:
