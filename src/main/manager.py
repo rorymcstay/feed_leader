@@ -104,9 +104,13 @@ class FeedManager:
         else:
             data = home.json()
             url = str(data["url"])
-        logging.debug("navigating to starting point {}".format(url))
-        self.webCrawler.driver.get(url)
-        logging.info("navigated to {} ok".format(url))
+        logging.info("navigating to starting point {}".format(url))
+        try:
+            self.webCrawler.driver.get(url)
+            logging.info("navigated to {} ok".format(url))
+        except WebDriverException as ex:
+            self.webCrawler.renewWebCrawler()
+            self.webCrawler.get(url)
         return home
 
     def setHome(self, make=None, model=None, sort='newest'):

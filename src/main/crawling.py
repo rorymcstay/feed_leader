@@ -20,13 +20,14 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from urllib3.exceptions import MaxRetryError, ProtocolError
 
-from feed.logger import logger as log
 from feed.settings import browser_params, nanny_params
 from feed.crawling import BrowserService
 from settings import feed_params
 from src.main.exceptions import NextPageException
 from src.main.market.utils.WebCrawlerConstants import WebCrawlerConstants
+from feed.logger import getLogger
 
+logging = getLogger(__name__)
 
 
 class WebCrawler(BrowserService):
