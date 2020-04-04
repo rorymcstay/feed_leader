@@ -1,14 +1,21 @@
-FROM python:3.6-alpine
+FROM selenium/node-chrome:3.141.59-20200326
 
-RUN mkdir -p /home
+USER root
+RUN apt-get update && \
+ apt-get -y install python3-pip
 
-WORKDIR /home
+#===================================
+# Application files
+#===================================
+RUN mkdir -p /usr/leader
+
+WORKDIR /usr/leader
 
 ADD requirements.txt ./requirements.txt
 
-RUN python -m pip install pip
-RUN pip install --upgrade pip
-RUN pip install -r ./requirements.txt
+#RUN python -m pip install pip
+RUN which python
+RUN python3 -m pip install -r ./requirements.txt
 
 
 # Installing packages
@@ -16,7 +23,27 @@ RUN pip install -r ./requirements.txt
 COPY src ./src
 COPY settings.py ./settings.py
 COPY leader.py ./app.py
+COPY run-leader.py ./entrypoint.py
+RUN chmod +x /usr/leader/entrypoint.py
+
+
+
+#====================================
+# Scripts to run Selenium Standalone
+#====================================
+COPY start-selenium-standalone.sh /opt/bin/start-selenium-standalone.sh
+RUN chmod +x /opt/bin/start-selenium-standalone.sh
+
+
+USER seluser
+#==============================
+# Supervisor configuration file
+#==============================
+COPY selenium.conf /etc/supervisor/conf.d/
+
+
+EXPOSE 4444
 
 # Entrypoint
-ENTRYPOINT ["python", "./app.py" ]
-CMD ["--run"]
+CMD ["python3", "/usr/leader/app.py", "--workerMode", "--startBrowser"]
+
