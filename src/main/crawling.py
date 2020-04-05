@@ -22,7 +22,6 @@ from urllib3.exceptions import MaxRetryError, ProtocolError
 
 from feed.settings import browser_params, nanny_params
 from feed.crawling import BrowserService
-from settings import feed_params
 from src.main.exceptions import NextPageException
 from src.main.market.utils.WebCrawlerConstants import WebCrawlerConstants
 from feed.logger import getLogger
@@ -37,13 +36,14 @@ class WebCrawler(BrowserService):
         """
 
         """
-        getContainerUrl="http://{host}:{port}/{api_prefix}/getMainContainer/{submission_port}".format(**nanny_params,
-                                                                                                      submission_port=port)
-        super().__init__(getContainerUrl=getContainerUrl)
+        super().__init__()
 
         self.driver.set_window_size(1020, 900)
         self.history = []
         self.page = 1
+
+    def updateFeedParams(self, feed_params):
+        self.feed_params = feed_params
 
     def safelyClick(self, item, wait_for, selector, timeout=3):
         """
@@ -68,14 +68,14 @@ class WebCrawler(BrowserService):
         except WebDriverException:
 
             traceback.print_exc()
-            item = self.driver.find_element_by_css_selector(feed_params["next_page_css"])
+            item = self.driver.find_element_by_css_selector(self.feed_params["next_page_css"])
             item.click()
             return False
 
     def resultPage(self):
-        if feed_params['result_stub'] in self.driver.current_url:
+        if self.feed_params['result_stub'] in self.driver.current_url:
             return False
-        elif feed_params['base_url'] not in self.driver.current_url:
+        elif self.feed_params['base_url'] not in self.driver.current_url:
             reportParameter('base_url')
             return False
         else:
@@ -84,11 +84,11 @@ class WebCrawler(BrowserService):
     def latestPage(self):
         try:
             self.driver.get(self.last_result)
-            element_present = EC.presence_of_all_elements_located((By.CSS_SELECTOR, feed_params['wait_for']))
+            element_present = EC.presence_of_all_elements_located((By.CSS_SELECTOR, self.feed_params['wait_for']))
             WebDriverWait(self.driver, 5).until(element_present)
             return True
         except TimeoutException:
-            logging.warning("{} did not load as expected or unusually slowly at {}".format(feed_params['wait_for'],
+            logging.warning("{} did not load as expected or unusually slowly at {}".format(self.feed_params['wait_for'],
                                                                                            self.driver.current_url))
             return True
 
@@ -100,7 +100,7 @@ class WebCrawler(BrowserService):
             try:
                 button = self.getNextButton()
                 button.click()
-                element_present = EC.presence_of_element_located((By.CSS_SELECTOR, feed_params['wait_for']))
+                element_present = EC.presence_of_element_located((By.CSS_SELECTOR, self.feed_params['wait_for']))
                 try:
                     WebDriverWait(self.driver, WebCrawlerConstants().click_timeout).until(element_present)
                 except:
@@ -120,18 +120,18 @@ class WebCrawler(BrowserService):
         raise NextPageException(self.page, "maximum attempts reached")
 
     def getNextButton(self) -> WebElement:
-        buttons = self.driver.find_elements_by_xpath(feed_params['next_page_xpath'])
+        buttons = self.driver.find_elements_by_xpath(self.feed_params['next_page_xpath'])
         for button in buttons:
             text = button.text.upper()
-            if feed_params['next_button_text'].upper() in text:
+            if self.feed_params['next_button_text'].upper() in text:
                 return button
         logging.debug("couldn't find next button by xpath - found {} buttons".format(len(buttons)))
         reportParameter('next_page_xpath')
         # 1st fallback is to use css
-        buttons = self.driver.find_elements_by_css_selector(feed_params.get("next_page_css"))
+        buttons = self.driver.find_elements_by_css_selector(self.feed_params.get("next_page_css"))
         for button in buttons:
             text = button.text.upper()
-            if feed_params.get("next_button_text").upper() in text:
+            if self.feed_params.get("next_button_text").upper() in text:
                 return button
         logging.debug("couldn't find next button by css selector - found {} buttons".format(len(buttons)))
         reportParameter("next_page_css")
@@ -142,7 +142,7 @@ class WebCrawler(BrowserService):
         try:
             next = item.findAll(attrs={"class": re.compile('.*(?i)next.*')})
             for item in next:
-                if feed_params['next_button_text'].upper() in item.text.upper():
+                if self.feed_params['next_button_text'].upper() in item.text.upper():
                     logging.info("found button {}".format(item.text))
                     return item
         except AttributeError:
@@ -152,19 +152,19 @@ class WebCrawler(BrowserService):
         start = time()
         content = self.driver.page_source
         cars = []
-        cars.extend(re.findall(r'' + feed_params['result_stub'] + '[^\"]+', content))
+        cars.extend(re.findall(r'' + self.feed_params['result_stub'] + '[^\"]+', content))
         logging.debug(
             "parsed result array of length {length} in {time} s".format(length=len(cars), time=time() - start))
         return list(set(cars))
 
     def retrace_steps(self, x):
-        self.driver.get(feed_params['home'])
+        self.driver.get(self.feed_params['home'])
         WebDriverWait(self.driver, 2)
         page = 1
         while page < x:
             self.nextPage()
             WebDriverWait(self.driver, 10).until(
-                EC.presence_of_element_located((By.XPATH, feed_params['next_page_xpath'])))
+                EC.presence_of_element_located((By.XPATH, self.feed_params['next_page_xpath'])))
             page = page + 1
             logging.info(page)
 
