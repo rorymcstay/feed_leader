@@ -42,7 +42,7 @@ class WebCrawler(BrowserService):
         self.history = []
         self.page = 1
 
-    def updateFeedParams(feed_params):
+    def updateFeedParams(self, feed_params):
         self.feed_params = feed_params
 
     def safelyClick(self, item, wait_for, selector, timeout=3):

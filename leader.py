@@ -8,7 +8,7 @@ import time
 import threading
 import subprocess
 import requests
-from feed.settings import nanny_params, routing_params
+from feed.settings import nanny_params, routing_params, command_params
 from src.main.exceptions import NextPageException
 from src.main.manager import FeedManager
 from src.main.market.utils.WebCrawlerConstants import WebCrawlerConstants
@@ -47,13 +47,14 @@ if __name__ == "__main__":
         browser_thread.daemon = True
 
         browser_thread.start()
-        sleep(60)
+        sleep(1)
 
     feed: FeedManager = FeedManager()
 
     # check depepndent containers
     nanny = Client("nanny", **nanny_params)
     router = Client("routing", **routing_params)
+    commands = Client("commands", **command_params)
 
     logging.info("nanny: {}".format(json.dumps(nanny_params, indent=4, sort_keys=True)))
 
@@ -62,7 +63,7 @@ if __name__ == "__main__":
     logging.info(f'starting {os.environ["name"]} feed leader')
 
 
-    if arg.workerMode:
+    if args.workerMode:
         feed.workerMode()
     elif args.single:
         feed.singleMode()
