@@ -47,7 +47,7 @@ if __name__ == "__main__":
         browser_thread.daemon = True
 
         browser_thread.start()
-        sleep(1)
+        sleep(10)
 
     feed: FeedManager = FeedManager()
 
