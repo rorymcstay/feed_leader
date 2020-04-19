@@ -14,6 +14,7 @@ from src.main.manager import FeedManager
 from src.main.market.utils.WebCrawlerConstants import WebCrawlerConstants
 from feed.service import Client
 import json
+from feed.crawling import beginBrowserThread
 start = logging.getLogger("startup")
 
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
@@ -33,21 +34,12 @@ parser.add_argument('--workerMode', action='store_true', default=False)
 parser.add_argument('--startBrowser', action='store_true', default=False)
 
 
-def startBrowser():
-    with subprocess.Popen("/opt/bin/start-selenium-standalone.sh", stdout=subprocess.PIPE, bufsize=1, universal_newlines=True) as process:
-        for line in process.stderr:
-            logging.info(f'browser starting on pid={browserProcess.pid}')
-
 if __name__ == "__main__":
 
 
     args = parser.parse_args()
     if args.startBrowser:
-        browser_thread = threading.Thread(target=startBrowser)
-        browser_thread.daemon = True
-
-        browser_thread.start()
-        sleep(10)
+        browser_thread = beginBrowserThread()
 
     feed: FeedManager = FeedManager()
 
