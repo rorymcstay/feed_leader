@@ -11,7 +11,7 @@ from kafka import KafkaProducer
 from kafka.errors import NoBrokersAvailable
 import time
 from time import sleep
-from feed.settings import kafka_params, routing_params, retry_params, command_params
+from feed.settings import kafka_params, routing_params, retry_params, nanny_params
 from feed.logger import getLogger
 from src.main.crawling import WebCrawler
 from selenium.common.exceptions import WebDriverException, TimeoutException
@@ -220,12 +220,12 @@ class FeedManager:
     def workerMode(self):
         self.running = True
         while self.running:
-            name = r.get('http://{host}:{port}/feedjobmanager/getNextFeed/'.format(**command_params)).json()
+            name = r.get('http://{host}:{port}/runningmanager/getNextFeed/'.format(**nanny_params)).json()
             if name.get('name') == None:
                 logging.info(f'nothing to do. will wait')
                 sleep(10)
             else:
-                r.get('http://{host}:{port}/feedjobmanager/markRunning/{name}'.format(name=name.get('name'), **command_params))
+                r.get('http://{host}:{port}/runningmanager/markRunning/{name}'.format(name=name.get('name'), **nanny_params))
                 self.singleMode(name=name.get('name'), runTimes=2)
-                r.get('http://{host}:{port}/feedjobmanager/markDone/{name}'.format( name=self.feed_params.get('name'), **command_params))
+                r.get('http://{host}:{port}/runningmanager/markDone/{name}'.format( name=self.feed_params.get('name'), **nanny_params))
 
