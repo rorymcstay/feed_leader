@@ -1,21 +1,12 @@
 import logging
 import os
-import signal
-import sys
 import argparse
-from time import time, sleep
-import time
-import threading
-import subprocess
-import requests
-from feed.settings import nanny_params, routing_params, command_params
-from src.main.exceptions import NextPageException
-from src.main.manager import FeedManager
-from src.main.market.utils.WebCrawlerConstants import WebCrawlerConstants
 from feed.service import Client
-import json
 from feed.crawling import beginBrowserThread
+from feed.actionchains import KafkaActionSubscription, KafkaActionPublisher
+from feed.crawling import BrowserService, BrowserActions
 start = logging.getLogger("startup")
+
 
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 logging.FileHandler('/var/tmp/myapp.log')
@@ -34,34 +25,30 @@ parser.add_argument('--workerMode', action='store_true', default=False)
 parser.add_argument('--startBrowser', action='store_true', default=False)
 
 
+class LeaderCrawler(KafkaActionSubscription, BrowserService, KafkaActionPublisher):
+
+    def __init__(self):
+        KafkaActionSubscription.__init__(self, topic='leader-route', implementation=BrowserActions)
+        BrowserService.__init__(self)
+        KafkaActionPublisher.__init__(self)
+
+    def onClickActionCallback(self, actionReturn: BrowserActions.Return):
+        logging.info(f'onClickActionCallback')
+
+    def onInputActionCallback(self, actionReturn: BrowserActions.Return):
+        logging.info(f'onInputActionCallback')
+
+    def onPublishActionCallback(self, actionReturn: BrowserActions.Return):
+        self.rePublish(actionReturn)
+
+    def onCaptureActionCallback(self, actionReturn: BrowserActions.Return):
+        self.rePublish(actionReturn)
+
+
 if __name__ == "__main__":
-
-
     args = parser.parse_args()
     if args.startBrowser:
-        browser_thread = beginBrowserThread()
-
-    feed: FeedManager = FeedManager()
-
-    # check depepndent containers
-    nanny = Client("nanny", **nanny_params)
-    router = Client("routing", **routing_params)
-    commands = Client("commands", **command_params)
-
-    logging.info("nanny: {}".format(json.dumps(nanny_params, indent=4, sort_keys=True)))
-
-    os.environ['name'] = args.name
-
-    logging.info(f'starting {os.environ["name"]} feed leader')
-
-
-    if args.workerMode:
-        feed.workerMode()
-    elif args.single:
-        feed.singleMode()
-    elif args.test:
-        feed.runMode(test=True)
-    else:
-        feed.runMode()
-
+        bt = beginBrowserThread()
+    feed = LeaderCrawler()
+    feed.main()
 

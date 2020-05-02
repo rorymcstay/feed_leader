@@ -23,6 +23,8 @@ from feed.settings import nanny_params, routing_params
 from src.main.exceptions import NextPageException
 from src.main.market.utils.WebCrawlerConstants import WebCrawlerConstants
 from feed.service import Client
+from feed.crawling import BrowserService, BrowserActions
+from feed.actionchains import KafkaActionPublisher, KafkaActionSubscription
 
 import signal
 start = log.getLogger("startup")
@@ -30,24 +32,8 @@ start = log.getLogger("startup")
 logging = getLogger(__name__)
 
 
-class GracefulKiller:
-    kill_now = False
+class FeedManager(KafkaActionSubscription, BrowserService, KafkaActionPublisher):
 
-    def __init__(self):
-        signal.signal(signal.SIGINT, self.exit_gracefully)
-        signal.signal(signal.SIGTERM, self.exit_gracefully)
-
-    def exit_gracefully(self, signum, frame):
-        self.kill_now = True
-
-class FeedManager:
-    _instance = None
-
-    def __new__(cls, *args, **kwargs):
-        if not cls._instance:
-            cls._instance = super(FeedManager, cls).__new__(
-                cls, *args, **kwargs)
-        return cls._instance
 
     make = None
     model = None
@@ -58,6 +44,24 @@ class FeedManager:
     busy = False
     browsers = []
 
+    def __init__(self):
+        KafkaActionPublisher.__init__(self)
+        BrowserService.__init__(self)
+        KafkaActionSubscription.__init__(self, topic='leader-route', implementation=BrowserActions)
+
+    def onClickActionCallback(self, actionReturn: BrowserActions.Return):
+        logging.info(f'onClickActionCallback')
+
+    def onInputActionCallback(self, actionReturn: BrowserActions.Return):
+        logging.info(f'onInputActionCallback')
+
+    def onPublishActionCallback(self, actionReturn: BrowserActions.Return):
+        self.rePublish(actionReturn)
+
+    def onCaptureActionCallback(self, actionReturn: BrowserActions.Return):
+        self.rePublish(actionReturn)
+
+############################ TO REMOVE #########################################
     def registerFeed():
         req = r.get("http://{host}:{port}/{params_manager}/getParameter/leader/{name}".format(name=name, **nanny_params))
 
@@ -172,7 +176,6 @@ class FeedManager:
         name = os.environ['NAME']
         self.reloadFeedParams(name)
         self.goToLastPending()
-        killer = GracefulKiller()
         start.info("leader has started")
         it = 0
         while (not test) or (it < 2):
@@ -199,12 +202,6 @@ class FeedManager:
             sleep(5)
             # verify then wait until page ready
 
-            if killer.kill_now:
-                self.webCrawler.driver.close()
-                r.get(
-                    "http://{host}:{port}/{api_prefix}/freeContainer/{free_port}".format(free_port=self.webCrawler.port,
-                                                                                          **nanny_params))
-                sys.exit()
 
     def singleMode(self, name=os.getenv('NAME', None), runTimes=1):
         i = 0
