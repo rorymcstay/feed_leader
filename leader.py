@@ -32,6 +32,8 @@ class LeaderCrawler(KafkaActionSubscription, BrowserService, KafkaActionPublishe
         self.rePublish(actionReturn)
 
     def onCaptureActionCallback(self, actionReturn: BrowserActions.Return):
+        logging.info(f'LeaderCrawler::onCaptureActionCallback(): chainName=[{actionReturn.name}], captureName=[{actionReturn.action.captureName}]')
+        logging.debug(f'LeaderCrawler::onCaptureActionCallback(): data=[{str(actionReturn.data)}]')
         self.rePublish(actionReturn)
 
     def cleanUp(self):
