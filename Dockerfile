@@ -44,5 +44,5 @@ COPY selenium.conf /etc/supervisor/conf.d/
 
 
 # Entrypoint
-CMD ["python3", "/usr/leader/app.py", "--workerMode", "--startBrowser"]
+CMD ["python3", "/usr/leader/app.py", "--start-browser"]
 
