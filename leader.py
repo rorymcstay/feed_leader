@@ -34,6 +34,9 @@ class LeaderCrawler(KafkaActionSubscription, BrowserService, KafkaActionPublishe
     def onCaptureActionCallback(self, actionReturn: BrowserActions.Return):
         self.rePublish(actionReturn)
 
+    def cleanUp(self):
+        self._browser_clean_up()
+
 
 if __name__ == "__main__":
     feed = LeaderCrawler()

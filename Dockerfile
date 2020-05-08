@@ -41,6 +41,8 @@ USER seluser
 #==============================
 COPY selenium.conf /etc/supervisor/conf.d/
 
+ENV START_BROWSER="true"
+
 
 
 # Entrypoint
