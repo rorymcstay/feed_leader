@@ -41,6 +41,7 @@ class LeaderCrawler(KafkaActionSubscription, BrowserService, KafkaActionPublishe
 
 
 if __name__ == "__main__":
+    logging.info("\n".join([f'{key}={os.environ[key]}' for key in os.environ]))
     feed = LeaderCrawler()
     feed.main()
 
