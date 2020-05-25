@@ -5,7 +5,6 @@ import argparse
 from feed.service import Client
 from feed.actionchains import KafkaActionSubscription, KafkaActionPublisher
 from feed.crawling import BrowserService, BrowserActions
-start = logging.getLogger("startup")
 
 class LeaderCrawler(KafkaActionSubscription, BrowserService, KafkaActionPublisher):
 
