@@ -10,7 +10,7 @@ start = logging.getLogger("startup")
 class LeaderCrawler(KafkaActionSubscription, BrowserService, KafkaActionPublisher):
 
     def __init__(self):
-        queue = f'{os.getenv("KAFKA_TOPIC_PREFIX", "u")}-leader-queue'
+        queue = f'leader-route'
         logging.info(f'subscribing to {queue}')
         KafkaActionSubscription.__init__(self, topic=queue, implementation=BrowserActions)
         BrowserService.__init__(self)
