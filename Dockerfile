@@ -21,7 +21,6 @@ RUN python3 -m pip install -r ./requirements.txt
 # Installing packages
 # Copying over necessary files
 COPY src ./src
-COPY settings.py ./settings.py
 COPY leader.py ./app.py
 
 
