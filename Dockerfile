@@ -23,8 +23,6 @@ RUN python3 -m pip install -r ./requirements.txt
 COPY src ./src
 COPY settings.py ./settings.py
 COPY leader.py ./app.py
-COPY run-leader.py ./entrypoint.py
-RUN chmod +x /usr/leader/entrypoint.py
 
 
 

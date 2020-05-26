@@ -5,6 +5,7 @@ import argparse
 from feed.service import Client
 from feed.actionchains import KafkaActionSubscription, KafkaActionPublisher
 from feed.crawling import BrowserService, BrowserActions
+from feed.settings import nanny_params, logger_settings_dict
 
 class LeaderCrawler(KafkaActionSubscription, BrowserService, KafkaActionPublisher):
 
@@ -34,21 +35,7 @@ class LeaderCrawler(KafkaActionSubscription, BrowserService, KafkaActionPublishe
 
 
 if __name__ == "__main__":
-    dictConfig({
-        'version': 1,
-        'formatters': {'default': {
-            'format': '[%(asctime)s]%(thread)d: %(module)s - %(levelname)s - %(message)s',
-        }},
-        'handlers': {'wsgi': {
-            'class': 'logging.StreamHandler',
-            'stream': 'ext://flask.logging.wsgi_errors_stream',
-            'formatter': 'default'
-        }},
-        'root': {
-            'level': 'INFO',
-            'handlers': ['wsgi']
-        }
-    })
+    dictConfig(logger_settings_dict)
     logging.getLogger("requests").setLevel(logging.WARNING)
     logging.getLogger("kafka").setLevel(logging.WARNING)
     logging.getLogger("urllib3").setLevel(logging.ERROR)
