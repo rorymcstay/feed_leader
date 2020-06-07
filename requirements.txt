@@ -3,6 +3,6 @@ selenium
 beautifulsoup4
 hazelcast-python-client
 kafka-python
-feed-utils==0.6.4
+feed-utils==0.7.0
 flask-classy
 flask
