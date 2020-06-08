@@ -35,7 +35,7 @@ class LeaderCrawler(KafkaActionSubscription, BrowserService, KafkaActionPublishe
 
 
 if __name__ == "__main__":
-    dictConfig(logger_settings_dict('root')
+    dictConfig(logger_settings_dict('root'))
     logging.getLogger("requests").setLevel(logging.WARNING)
     logging.getLogger("kafka").setLevel(logging.WARNING)
     logging.getLogger("urllib3").setLevel(logging.ERROR)
