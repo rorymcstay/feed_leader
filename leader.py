@@ -16,16 +16,16 @@ class LeaderCrawler(KafkaActionSubscription, BrowserService, KafkaActionPublishe
         BrowserService.__init__(self)
         KafkaActionPublisher.__init__(self)
 
-    def onClickActionCallback(self, actionReturn: BrowserActions.Return):
+    def onClickActionCallback(self, actionReturn: BrowserActions.Return, **kwargs):
         logging.info(f'onClickActionCallback')
 
-    def onInputActionCallback(self, actionReturn: BrowserActions.Return):
+    def onInputActionCallback(self, actionReturn: BrowserActions.Return, **kwargs):
         logging.info(f'onInputActionCallback')
 
-    def onPublishActionCallback(self, actionReturn: BrowserActions.Return):
+    def onPublishActionCallback(self, actionReturn: BrowserActions.Return, **kwargs):
         self.rePublish(actionReturn)
 
-    def onCaptureActionCallback(self, actionReturn: BrowserActions.Return):
+    def onCaptureActionCallback(self, actionReturn: BrowserActions.Return, **kargs):
         logging.info(f'LeaderCrawler::onCaptureActionCallback(): chainName=[{actionReturn.name}], captureName=[{actionReturn.action.captureName}]')
         logging.debug(f'LeaderCrawler::onCaptureActionCallback(): data=[{str(actionReturn.data)}]')
         self.rePublish(actionReturn)
