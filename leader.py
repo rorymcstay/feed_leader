@@ -12,7 +12,7 @@ class LeaderCrawler(KafkaActionSubscription, BrowserService, KafkaActionPublishe
     def __init__(self):
         queue = f'leader-route'
         logging.info(f'subscribing to {queue}')
-        KafkaActionSubscription.__init__(self, topic=queue, implementation=BrowserActions)
+        KafkaActionSubscription.__init__(self, queue, implementation=BrowserActions)
         BrowserService.__init__(self)
         KafkaActionPublisher.__init__(self)
 
@@ -23,12 +23,15 @@ class LeaderCrawler(KafkaActionSubscription, BrowserService, KafkaActionPublishe
         logging.info(f'onInputActionCallback')
 
     def onPublishActionCallback(self, actionReturn: BrowserActions.Return, **kwargs):
-        self.rePublish(actionReturn)
+        route = kwargs['chain'].getRepublishRoute(actionReturn.action)
+        self.rePublish(actionReturn, route)
 
-    def onCaptureActionCallback(self, actionReturn: BrowserActions.Return, **kargs):
+
+    def onCaptureActionCallback(self, actionReturn: BrowserActions.Return, **kwargs):
         logging.info(f'LeaderCrawler::onCaptureActionCallback(): chainName=[{actionReturn.name}], captureName=[{actionReturn.action.captureName}]')
         logging.debug(f'LeaderCrawler::onCaptureActionCallback(): data=[{str(actionReturn.data)}]')
-        self.rePublish(actionReturn)
+        route = kwargs['chain'].getRepublishRoute(actionReturn.action)
+        self.rePublish(actionReturn, route)
 
     def cleanUp(self):
         self._browser_clean_up()
